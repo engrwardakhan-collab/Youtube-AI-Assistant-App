@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import time
 import json
 import hashlib
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.config import Settings
 from app.auth.token_store import TokenStore
@@ -20,22 +22,33 @@ from app.ai.openai_client import OpenAIClient
 from app.ai.batch_drafter import batch_draft_replies
 
 
+# -------------------------
+# Runtime folders
+# -------------------------
 RUNTIME_DIR = Path("runtime")
+
 TRIAGE_DIR = RUNTIME_DIR / "triage"
 DRAFTS_DIR = RUNTIME_DIR / "drafts"
 FAIL_DIR = RUNTIME_DIR / "draft_failures"
 
-for d in (TRIAGE_DIR, DRAFTS_DIR, FAIL_DIR):
-    # Create all missing parent folders  & Do NOT throw an error if the folder already exists
-    d.mkdir(parents=True, exist_ok=True)    
+PROCESSED_DIR = RUNTIME_DIR / "processed"
+REJECTED_DIR = RUNTIME_DIR / "rejected"
+ERRORS_DIR = RUNTIME_DIR / "errors"
+
+METRICS_PATH = RUNTIME_DIR / "metrics.json"
+
+for d in (TRIAGE_DIR, DRAFTS_DIR, FAIL_DIR, PROCESSED_DIR, REJECTED_DIR, ERRORS_DIR):
+    d.mkdir(parents=True, exist_ok=True)
 
 
+# -------------------------
+# Helpers
+# -------------------------
 def _clean_text(text: str) -> str:
     return " ".join((text or "").strip().split())
 
 
 def _text_hash(text: str) -> str:
-    # Convert this text into a hash that uniquely represents it
     norm = _clean_text(text).lower()
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:16]
 
@@ -44,7 +57,20 @@ def _save_json(path: Path, obj) -> None:
     path.write_text(json.dumps(obj, indent=2, default=str), encoding="utf-8")
 
 
-def main():
+def _inc_metric(key: str, n: int = 1) -> None:
+    try:
+        if METRICS_PATH.exists():
+            data = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
+        else:
+            data = {}
+    except Exception:
+        data = {}
+    data[key] = int(data.get(key, 0)) + n
+    METRICS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+
+def run_once() -> dict:
     s = Settings()
 
     if not s.CLIENT_ID or not s.CLIENT_SECRET:
@@ -89,12 +115,14 @@ def main():
         cfg=FetchConfig(page_size=50, max_pages=5),
     )
 
+    _inc_metric("fetched", len(result.new_comments))
+
     print("Checkpoint before:", result.checkpoint_before)
     print("Checkpoint after :", result.checkpoint_after)
     print("New comments found:", len(result.new_comments))
 
     # ===========================
-    # A) Dedupe (efficient + safe)
+    # A) Dedupe
     # ===========================
     unique_by_id = {}
     seen_hashes = set()
@@ -106,7 +134,6 @@ def main():
         txt = _clean_text(c.text)
         h = _text_hash(txt)
 
-        # near-duplicate drop for very short repeated spam
         if h in seen_hashes and len(txt) < 80:
             continue
 
@@ -114,10 +141,11 @@ def main():
         seen_hashes.add(h)
 
     candidates = list(unique_by_id.values())
+    _inc_metric("deduped_candidates", len(candidates))
     print(f"After dedupe: {len(candidates)} candidates")
 
     # ===========================
-    # B) Triage (rules/scoring)
+    # B) Triage
     # ===========================
     to_draft = []
     ignored = 0
@@ -125,20 +153,20 @@ def main():
 
     for c in candidates:
         tr = triage_comment(c)
-        
-#  is used to persist a triage record for each comment. It gives you a debug/trace file per comment
+
         _save_json(
             TRIAGE_DIR / f"{c.comment_id}.json",
             {
                 "comment_id": c.comment_id,
-                "author": c.author,
-                "published_at": str(c.published_at),
-                "text": c.text,
+                "author": getattr(c, "author", None),
+                "published_at": str(getattr(c, "published_at", None)),
+                "text": getattr(c, "text", None),
                 "decision": tr.decision.value,
                 "category": tr.category.value,
                 "spam_score": tr.spam_score,
                 "relevance_score": tr.relevance_score,
                 "reasons": tr.reasons,
+                "triaged_at": datetime.now(timezone.utc).isoformat(),  # ✅ fixed
             },
         )
 
@@ -151,40 +179,65 @@ def main():
         if tr.decision.value == "draft_reply":
             to_draft.append(c)
 
+    _inc_metric("triage_ignored", ignored)
+    _inc_metric("triage_spam", spam)
+    _inc_metric("triage_to_draft", len(to_draft))
+
     print(f"Triage summary: to_draft={len(to_draft)}, ignored={ignored}, spam={spam}")
+
+    if not to_draft:
+        print("✅ Nothing to draft. Done.")
+        return {"drafts_saved": 0, "failures": 0, "fetched": len(result.new_comments)}
 
     # ===========================
     # C) Batch draft with OpenAI
     # ===========================
-    if not to_draft:
-        print("✅ Nothing to draft. Done.")
-        return
-
     openai_client = OpenAIClient(model="gpt-4o-mini")
 
-    batch_size = 12  # 10–20 is typical; keep 12 safe & stable
+    batch_size = 12
     total_drafts = 0
     total_failures = 0
 
     for i in range(0, len(to_draft), batch_size):
         batch = to_draft[i : i + batch_size]
+
+        batch = [c for c in batch if not (DRAFTS_DIR / f"{c.comment_id}.json").exists()]
+        if not batch:
+            continue
+
         try:
             drafts, failures = batch_draft_replies(batch, openai_client)
         except RuntimeError as e:
             err = str(e)
             failures = [{"comment_id": c.comment_id, "error": err, "raw": None} for c in batch]
             total_failures += len(failures)
+            _inc_metric("llm_failures", len(failures))
+
             _save_json(
                 FAIL_DIR / f"batch_{i}_{i+len(batch)-1}.json",
-                {"failures": failures, "error": err},
+                {"failures": failures, "error": err, "at": datetime.now(timezone.utc).isoformat()},  # ✅ fixed
             )
             print(f"❌ OpenAI error in batch {i//batch_size + 1}: {err}")
             if "insufficient_quota" in err or "quota" in err or "429" in err:
-                print("❌ Quota exhausted; stopping further batches.")
+                print("❌ Quota/rate-limit; stopping further batches.")
                 break
             continue
 
+        by_id = {c.comment_id: c for c in batch}
+        now_iso = datetime.now(timezone.utc).isoformat()  # ✅ fixed
+
         for d in drafts:
+            orig = by_id.get(d.comment_id)
+
+            triage_file = TRIAGE_DIR / f"{d.comment_id}.json"
+            triage_reasons = []
+            try:
+                if triage_file.exists():
+                    tri = json.loads(triage_file.read_text(encoding="utf-8"))
+                    triage_reasons = tri.get("reasons", [])
+            except Exception:
+                triage_reasons = []
+
             _save_json(
                 DRAFTS_DIR / f"{d.comment_id}.json",
                 {
@@ -194,30 +247,300 @@ def main():
                     "confidence": d.confidence,
                     "needs_human": d.needs_human,
                     "reasons": d.reasons,
+                    "author": getattr(orig, "author", None) if orig else None,
+                    "published_at": str(getattr(orig, "published_at", None)) if orig else None,
+                    "original_text": getattr(orig, "text", None) if orig else None,
+                    "triage_reasons": triage_reasons,
+                    "created_at": now_iso,
                 },
             )
+
         total_drafts += len(drafts)
+        _inc_metric("llm_drafts_saved", len(drafts))
 
         if failures:
             total_failures += len(failures)
-            _save_json(FAIL_DIR / f"batch_{i}_{i+len(batch)-1}.json", {"failures": failures})
+            _inc_metric("llm_failures", len(failures))
+            _save_json(
+                FAIL_DIR / f"batch_{i}_{i+len(batch)-1}.json",
+                {"failures": failures, "at": now_iso},
+            )
 
         print(f"Batch {i//batch_size + 1}: drafts={len(drafts)} failures={len(failures)}")
-
         time.sleep(0.2)
 
     print(f"✅ Done. drafts_saved={total_drafts}, failures={total_failures}")
     print(f"Drafts saved at: {DRAFTS_DIR}")
 
+    return {
+        "drafts_saved": total_drafts,
+        "failures": total_failures,
+        "fetched": len(result.new_comments),
+    }
+
+
+def main():
+    result = run_once()
+    print("UI refresh summary:", result)
+    print("Next: run the review UI ->  uvicorn app.review.webapp:app --reload")
+
 
 if __name__ == "__main__":
-    try:
-        main()
-    except RefreshTokenMissing as e:
-        print("❌ Setup error:", e)
-    except RuntimeError as e:
-        print("❌ Runtime error:", e)
-    except Exception:
-        import traceback
-        print("💥 Unexpected error:")
-        traceback.print_exc()
+        try:
+            main()
+        except RefreshTokenMissing as e:
+            print("❌ Setup error:", e)
+        except RuntimeError as e:
+            print("❌ Runtime error:", e)
+        except Exception:
+            import traceback
+            print("💥 Unexpected error:")
+            traceback.print_exc()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# import time
+# import json
+# import hashlib
+# from pathlib import Path
+# from datetime import datetime
+
+# from app.config import Settings
+# from app.auth.token_store import TokenStore
+# from app.auth.google_oauth_client import GoogleOAuthClient
+# from app.auth.token_manager import TokenManager
+# from app.errors import RefreshTokenMissing
+
+# from app.youtube.youtube_client import YouTubeClient
+# from app.youtube.comment_fetcher import CommentFetcher, FetchConfig
+# from app.youtube.checkpoint_store import CheckpointStore
+# from app.youtube.replied_store import RepliedStore
+
+# from app.ai.triage import triage_comment
+# from app.ai.openai_client import OpenAIClient
+# from app.ai.batch_drafter import batch_draft_replies
+
+
+# RUNTIME_DIR = Path("runtime")
+# TRIAGE_DIR = RUNTIME_DIR / "triage"
+# DRAFTS_DIR = RUNTIME_DIR / "drafts"
+# FAIL_DIR = RUNTIME_DIR / "draft_failures"
+
+# for d in (TRIAGE_DIR, DRAFTS_DIR, FAIL_DIR):
+#     # Create all missing parent folders  & Do NOT throw an error if the folder already exists
+#     d.mkdir(parents=True, exist_ok=True)    
+
+
+# def _clean_text(text: str) -> str:
+#     return " ".join((text or "").strip().split())
+
+
+# def _text_hash(text: str) -> str:
+#     # Convert this text into a hash that uniquely represents it
+#     norm = _clean_text(text).lower()
+#     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:16]
+
+
+# def _save_json(path: Path, obj) -> None:
+#     path.write_text(json.dumps(obj, indent=2, default=str), encoding="utf-8")
+
+
+# def main():
+#     s = Settings()
+
+#     if not s.CLIENT_ID or not s.CLIENT_SECRET:
+#         raise RuntimeError("Missing CLIENT_ID / CLIENT_SECRET in Settings")
+
+#     if not s.YOUTUBE_CHANNEL_ID:
+#         raise RuntimeError("Missing YOUTUBE_CHANNEL_ID in Settings")
+
+#     if not s.REFRESH_TOKEN_PATH.exists():
+#         raise RefreshTokenMissing(f"Refresh token file not found at: {s.REFRESH_TOKEN_PATH}")
+
+#     store = TokenStore(
+#         refresh_token_path=s.REFRESH_TOKEN_PATH,
+#         cache_path=s.TOKENS_CACHE_PATH,
+#     )
+
+#     oauth_client = GoogleOAuthClient(
+#         token_url=s.GOOGLE_TOKEN_URL,
+#         client_id=s.CLIENT_ID,
+#         client_secret=s.CLIENT_SECRET,
+#     )
+
+#     manager = TokenManager(
+#         store=store,
+#         oauth_client=oauth_client,
+#         refresh_early_seconds=s.REFRESH_EARLY_SECONDS,
+#     )
+
+#     access_token = manager.get_valid_access_token()
+#     print("✅ Startup token ready. Access token length:", len(access_token))
+
+#     yt = YouTubeClient(manager)
+
+#     fetcher = CommentFetcher(
+#         youtube_client=yt,
+#         checkpoint_store=CheckpointStore(Path("runtime/checkpoint.json")),
+#         replied_store=RepliedStore(Path("runtime/replied_ids.json"), maxlen=5000),
+#     )
+
+#     result = fetcher.fetch_latest_for_channel(
+#         channel_id=s.YOUTUBE_CHANNEL_ID,
+#         cfg=FetchConfig(page_size=50, max_pages=5),
+#     )
+
+#     print("Checkpoint before:", result.checkpoint_before)
+#     print("Checkpoint after :", result.checkpoint_after)
+#     print("New comments found:", len(result.new_comments))
+
+#     # ===========================
+#     # A) Dedupe (efficient + safe)
+#     # ===========================
+#     unique_by_id = {}
+#     seen_hashes = set()
+
+#     for c in result.new_comments:
+#         if c.comment_id in unique_by_id:
+#             continue
+
+#         txt = _clean_text(c.text)
+#         h = _text_hash(txt)
+
+#         # near-duplicate drop for very short repeated spam
+#         if h in seen_hashes and len(txt) < 80:
+#             continue
+
+#         unique_by_id[c.comment_id] = c
+#         seen_hashes.add(h)
+
+#     candidates = list(unique_by_id.values())
+#     print(f"After dedupe: {len(candidates)} candidates")
+
+#     # ===========================
+#     # B) Triage (rules/scoring)
+#     # ===========================
+#     to_draft = []
+#     ignored = 0
+#     spam = 0
+
+#     for c in candidates:
+#         tr = triage_comment(c)
+        
+# #  is used to persist a triage record for each comment. It gives you a debug/trace file per comment
+#         _save_json(
+#             TRIAGE_DIR / f"{c.comment_id}.json",
+#             {
+#                 "comment_id": c.comment_id,
+#                 "author": c.author,
+#                 "published_at": str(c.published_at),
+#                 "text": c.text,
+#                 "decision": tr.decision.value,
+#                 "category": tr.category.value,
+#                 "spam_score": tr.spam_score,
+#                 "relevance_score": tr.relevance_score,
+#                 "reasons": tr.reasons,
+#             },
+#         )
+
+#         if tr.decision.value == "ignore":
+#             ignored += 1
+#             continue
+#         if tr.decision.value == "spam":
+#             spam += 1
+#             continue
+#         if tr.decision.value == "draft_reply":
+#             to_draft.append(c)
+
+#     print(f"Triage summary: to_draft={len(to_draft)}, ignored={ignored}, spam={spam}")
+
+#     # ===========================
+#     # C) Batch draft with OpenAI
+#     # ===========================
+#     if not to_draft:
+#         print("✅ Nothing to draft. Done.")
+#         return
+
+#     openai_client = OpenAIClient(model="gpt-4o-mini")
+
+#     batch_size = 12  # 10–20 is typical; keep 12 safe & stable
+#     total_drafts = 0
+#     total_failures = 0
+
+#     for i in range(0, len(to_draft), batch_size):
+#         batch = to_draft[i : i + batch_size]
+#         try:
+#             drafts, failures = batch_draft_replies(batch, openai_client)
+#         except RuntimeError as e:
+#             err = str(e)
+#             failures = [{"comment_id": c.comment_id, "error": err, "raw": None} for c in batch]
+#             total_failures += len(failures)
+#             _save_json(
+#                 FAIL_DIR / f"batch_{i}_{i+len(batch)-1}.json",
+#                 {"failures": failures, "error": err},
+#             )
+#             print(f"❌ OpenAI error in batch {i//batch_size + 1}: {err}")
+#             if "insufficient_quota" in err or "quota" in err or "429" in err:
+#                 print("❌ Quota exhausted; stopping further batches.")
+#                 break
+#             continue
+
+#         for d in drafts:
+#             _save_json(
+#                 DRAFTS_DIR / f"{d.comment_id}.json",
+#                 {
+#                     "comment_id": d.comment_id,
+#                     "reply_text": d.reply_text,
+#                     "category": d.category.value,
+#                     "confidence": d.confidence,
+#                     "needs_human": d.needs_human,
+#                     "reasons": d.reasons,
+#                 },
+#             )
+#         total_drafts += len(drafts)
+
+#         if failures:
+#             total_failures += len(failures)
+#             _save_json(FAIL_DIR / f"batch_{i}_{i+len(batch)-1}.json", {"failures": failures})
+
+#         print(f"Batch {i//batch_size + 1}: drafts={len(drafts)} failures={len(failures)}")
+
+#         time.sleep(0.2)
+
+#     print(f"✅ Done. drafts_saved={total_drafts}, failures={total_failures}")
+#     print(f"Drafts saved at: {DRAFTS_DIR}")
+
+
+# if __name__ == "__main__":
+#     try:
+#         main()
+#     except RefreshTokenMissing as e:
+#         print("❌ Setup error:", e)
+#     except RuntimeError as e:
+#         print("❌ Runtime error:", e)
+#     except Exception:
+#         import traceback
+#         print("💥 Unexpected error:")
+#         traceback.print_exc()
