@@ -1,82 +1,92 @@
 🚀 YouTube AI Comment Assistant
 
-An AI-powered assistant that helps YouTube creators automatically fetch, triage, draft, review, and publish comment replies — with a human-in-the-loop safety layer.
+An AI-powered assistant that helps YouTube creators automatically fetch, classify, draft, review, and publish comment replies — while keeping humans in full control.
 
-Built using Python, FastAPI, YouTube Data API (OAuth), and OpenAI.
+Built using Python, FastAPI, YouTube OAuth, and OpenAI.
 
-✨ What It Does
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Fetches new comments from your YouTube channel
+✨ Overview
 
-Classifies comments (question, complaint, praise, other)
-
-Generates AI-powered reply drafts
-
-Flags risky comments for human review
-
-Provides a clean web UI to approve or edit replies
-
-Posts approved replies directly to YouTube
-
-Tracks metrics and reply history
-
-🧠 Why This Project
-
-Creators receive hundreds of comments.
-
-Manually replying:
-
-Takes hours
-
-Kills consistency
-
-Slows channel growth
+Managing YouTube comments at scale is time-consuming and inconsistent.
 
 This assistant:
 
-Automates 80% of the workflow
+Fetches new comments automatically
 
-Keeps humans in control
+Classifies them using AI
 
-Saves massive time
+Generates smart reply drafts
 
-🎥 Demo
+Requires human approval
 
-👉 Add your Loom / YouTube demo link here
+Publishes approved replies to YouTube
 
-📸 Screenshots
+It automates the workflow — without sacrificing control or safety.
 
-Add these inside a /screenshots folder and reference them here:
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Review Dashboard
+🎯 Problem
 
-Drafted Replies List
+Creators receive hundreds of comments daily.
 
-Approve / Reject Flow
+Manual replies:
 
-“No Comments Available” State
+Take hours
 
-Example:
+Reduce consistency
 
-![Dashboard](screenshots/dashboard.png)
+Slow growth
 
-🏗 Architecture Overview
+Create burnout
 
-Workflow:
+There is no structured system to manage comment workflows efficiently.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🧠 Solution
+
+This project provides a structured AI-assisted workflow:
 
 Fetch YouTube comments via OAuth
 
-Run AI triage classification
+Classify comments (question, complaint, praise, other)
 
-Generate draft replies
+Generate contextual reply drafts
 
-Store drafts in runtime folder
+Store drafts locally
 
-Review via FastAPI UI
+Review in a clean web interface
 
-Approve → Post to YouTube API
+Approve → Post to YouTube
 
-Human approval is required before posting.
+Human approval is required before publishing.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🛠 Key Features
+
+🔎 Automated comment fetching
+
+🧩 AI-based comment triage
+
+✍️ AI-generated reply drafting
+
+🛡 Human-in-the-loop approval
+
+🌐 FastAPI review UI
+
+📊 Runtime metrics tracking
+
+🔐 Secure local secret management
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🏗 Architecture Flow
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ⚙️ Tech Stack
 
@@ -92,43 +102,51 @@ YouTube Data API (OAuth 2.0)
 
 OpenAI API
 
-File-based state storage (JSON runtime tracking)
+JSON-based runtime state management
 
-🔒 Safety & Human-in-the-Loop
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Comments are categorized before reply
+🔒 Security & Safety
 
-Risky comments can be flagged
+No secrets stored in repository
 
-Replies require manual approval
+API keys stored in secrets/ directory
 
-No auto-post without review
+Human approval required before posting
 
-API keys stored securely outside repo
+Runtime data isolated in runtime/ folder
 
-🚀 Quickstart
+No auto-publishing without review
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🚀 Quickstart (Windows)
+
 1️⃣ Clone Repository
+
 git clone <your-repo-url>
 cd youtube-ai-assistant
+
+------------------------------------------------------------------------------------------
 
 2️⃣ Create Virtual Environment
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
+----------------------------------------------------------------------------------------
+
 3️⃣ Install Dependencies
 pip install -r requirements.txt
 
-4️⃣ Setup Environment
+----------------------------------------------------------------------------------------
+
+4️⃣ Configure Environment
 
 Copy:
-
 .env.example
 
-
 to:
-
 .env
-
 
 Fill in:
 
@@ -138,54 +156,88 @@ YT_CLIENT_SECRET
 
 YOUTUBE_CHANNEL_ID
 
-Place your secrets inside:
+Place secrets inside:
 
 secrets/openai_api_key
 secrets/refresh_token.txt
 
-5️⃣ Run Web UI
-python -m uvicorn app.review.webapp:app --reload
+-----------------------------------------------------------------------------------------------------------------
 
+5️⃣ Run Web Review UI
+.\run-ui.bat
 
 Open:
 
 http://127.0.0.1:8000
 
-6️⃣ Run CLI Workflow (Fetch + Draft)
-python main.py
+------------------------------------------------------------------------------------------------------
 
-📊 Project Structure
+6️⃣ Run CLI Workflow (Fetch + Draft)
+
+.\run-cli.bat
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+📁 Project Structure
+
 app/
+
  ├── ai/
+ 
  ├── youtube/
+ 
  ├── review/
+ 
  ├── auth/
+
 runtime/
+
 secrets/
+
 main.py
+
 requirements.txt
+
+run-ui.bat
+
+run-cli.bat
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+📸 Screenshots
+
+Add images inside /screenshots folder:
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🎥 Demo Video
+
+Add your Loom or YouTube demo link here.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 🛣 Roadmap
 
-Future improvements:
-
 Multi-channel support
 
-Creator tone selection (professional / funny / brand voice)
+Creator tone customization
 
-Bulk approve mode
+Bulk approval mode
 
 Comment analytics dashboard
 
 Cloud deployment version
 
-Copilot / MCP integration
+MCP / Copilot integration
 
-🎯 Competition Category
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+🏆 Competition Category
 
 Creative Apps – AI Productivity Tool for Content Creators
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 👩‍💻 Author
 
-Built by Warda Khan
+Warda Khan
 Applied AI Engineer | AI Automation Builder
