@@ -1,52 +1,47 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
 
-# env files
+# Environment variables
 .env
 .env.*
+!.env.example
 
-# secrets
+# Secrets
 secrets/
-**/secrets/
-
-# runtime token caches
-runtime/
 tokens.json
 *.token
-*.json
+
+# Runtime/Generated files
+runtime/
 drafts/
 failures/
 triage/
 
-# Python
-.venv/
-__pycache__/
-*.pyc
-.env
-.env.*
+# Logs
 *.log
 
-# VS Code
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+settings.json
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
-
-# Ignore runtime-generated data
-runtime/*
-drafts/*
-failures/*
-secrets/*
-
-# env / secrets
-.env
-secrets/
-runtime/
-
-# python cache / venv
-__pycache__/
-*.pyc
-.venv/
-
-# editor
-.vscode/
