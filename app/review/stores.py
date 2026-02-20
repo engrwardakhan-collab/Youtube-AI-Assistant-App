@@ -88,7 +88,9 @@ class DraftStores:
         payload["error"] = error
         payload["failed_at"] = datetime.now(timezone.utc).isoformat()
         p.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
-        # keep pending file too so user can still see/edit it if needed
+
+        # ✅ remove from pending so it disappears from main window
+        self._safe_delete(self._path(self.pending, draft.comment_id))
 
     def update_error(self, comment_id: str, error: str) -> None:
         p = self._path(self.errors, comment_id)
