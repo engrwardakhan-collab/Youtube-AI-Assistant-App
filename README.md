@@ -218,6 +218,17 @@ https://www.loom.com/share/3948c00a2bd947babbfcb6c998527710
 Creative Apps – AI Productivity Tool for Content Creators
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+**How GitHub Copilot helped build this**
+
+Copilot suggestions used to scaffold FastAPI routes, Pydantic models, OAuth flow boilerplate
+
+Copilot Chat used to debug issues (OAuth refresh, YouTube API errors, pagination, rate limits)
+
+Copilot used to refactor (separating services, error handling, retries, typing, test scaffolding)
+
+<img width="601" height="1026" alt="image" src="https://github.com/user-attachments/assets/21b5b5cc-95e4-4b8f-9d68-a9ed06b9ad3c" />
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 👩‍💻 Author
 
