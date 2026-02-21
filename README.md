@@ -120,7 +120,7 @@ No auto-publishing without review
 
 1️⃣ Clone Repository
 
-git clone <your-repo-url>
+git clone https://github.com/engrwardakhan-collab/Youtube-AI-Assistant-App.git
 cd youtube-ai-assistant
 
 ------------------------------------------------------------------------------------------
@@ -210,8 +210,7 @@ run-cli.bat
 
 🎥 Demo Video
 
-Add your Loom or YouTube demo link here.
-
+https://www.loom.com/share/3948c00a2bd947babbfcb6c998527710
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 🏆 Competition Category
