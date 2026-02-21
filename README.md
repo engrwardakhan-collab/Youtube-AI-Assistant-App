@@ -1,8 +1,10 @@
-🚀 YouTube AI Comment Assistant
+🚀🚀 YouTube AI Comment Assistant
 
-An AI-powered assistant that helps YouTube creators automatically fetch, classify, draft, review, and publish comment replies — while keeping humans in full control.
+Reply to YouTube comments 10x faster — without losing control.
 
-Built using Python, FastAPI, YouTube OAuth, and OpenAI.
+An AI-powered backend that fetches, classifies, drafts, and manages YouTube comment replies — with human approval built in.
+
+Built using Python, FastAPI, YouTube OAuth,Guardrail and OpenAI.
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -28,39 +30,30 @@ It automates the workflow — without sacrificing control or safety.
 
 🎯 Problem
 
-Creators receive hundreds of comments daily.
+Growing YouTube channels receive dozens to hundreds of comments daily.
 
-Manual replies:
+Manual reply management:
 
-Take hours
+• Consumes hours every week  
+• Creates inconsistent messaging  
+• Makes it easy to miss important questions  
+• Leads to creator burnout  
 
-Reduce consistency
-
-Slow growth
-
-Create burnout
-
-There is no structured system to manage comment workflows efficiently.
-
+There is no structured workflow for managing comments intelligently.
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 🧠 Solution
 
-This project provides a structured AI-assisted workflow:
+This assistant introduces a structured AI workflow:
 
-Fetch YouTube comments via OAuth
+1. Fetch new comments via YouTube OAuth  
+2. Classify each comment using AI (question, complaint, praise, other)  
+3. Generate contextual reply drafts  
+4. Store drafts locally for traceability  
+5. Review in a FastAPI-based UI  
+6. Approve → Publish to YouTube  
 
-Classify comments (question, complaint, praise, other)
-
-Generate contextual reply drafts
-
-Store drafts locally
-
-Review in a clean web interface
-
-Approve → Post to YouTube
-
-Human approval is required before publishing.
+AI assists. Humans decide.
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -82,8 +75,11 @@ Human approval is required before publishing.
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🏗 Architecture Flow
+🏗 Architecture
 
+YouTube API → Fetcher → AI Triage → AI Drafter → Runtime Store → Review UI → Publish
+
+<img width="1536" height="1024" alt="ChatGPT Image Feb 21, 2026, 06_28_17 AM" src="https://github.com/user-attachments/assets/32461fe0-88fe-47fc-89ad-52a7b4fe697e" />
 
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -205,29 +201,16 @@ run-cli.bat
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 📸 Screenshots
+<img width="1884" height="807" alt="Screenshot 2026-02-21 113402" src="https://github.com/user-attachments/assets/5e8f1f53-6f7e-4cd6-b690-4def294168dd" />
+<img width="1776" height="904" alt="Screenshot 2026-02-21 113503" src="https://github.com/user-attachments/assets/be3bdfda-298a-4f24-98e0-d7bbd0460ba1" />
+<img width="1782" height="686" alt="Screenshot 2026-02-21 113524" src="https://github.com/user-attachments/assets/69f0dc6f-e7af-4894-8a95-6de1a9ec6dee" />
+<img width="1810" height="645" alt="Screenshot 2026-02-21 113537" src="https://github.com/user-attachments/assets/800b23df-0b44-4e9a-9f03-85f486399032" />
 
-Add images inside /screenshots folder:
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 🎥 Demo Video
 
 Add your Loom or YouTube demo link here.
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-🛣 Roadmap
-
-Multi-channel support
-
-Creator tone customization
-
-Bulk approval mode
-
-Comment analytics dashboard
-
-Cloud deployment version
-
-MCP / Copilot integration
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
