@@ -29,7 +29,7 @@ class TokenWatcher:
     def _run(self) -> None:
         while not self._stop_event.is_set():
             try:
-                token = self.token_manager.get_valid_access_token()
+                self.token_manager.get_valid_access_token()
                 # You can log a small message if you want:
                 # print("✅ Access token ensured (length):", len(token))
             except Exception as e:

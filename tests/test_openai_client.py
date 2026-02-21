@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 
 
 def test_openaiclient_missing_key_raises(monkeypatch):

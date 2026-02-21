@@ -64,13 +64,7 @@ def build_dashboard(runtime_dir: Path, drafts: List[Any]) -> dict[str, Any]:
     def _label(t: dict[str, Any]) -> str:
         return str(t.get("label") or t.get("category") or t.get("triage_label") or "").lower()
 
-    def _priority(t: dict[str, Any]) -> str:
-        return str(t.get("priority") or "").lower()
-
     labels = [_label(t) for t in triages]
-    priorities = [_priority(t) for t in triages]
-
-    pending_count = len(drafts)
     # spam_count = sum(1 for l in labels if "spam" in l)
     # high_priority = sum(1 for p in priorities if p in ("high", "urgent", "p1"))
 
@@ -88,7 +82,7 @@ def build_dashboard(runtime_dir: Path, drafts: List[Any]) -> dict[str, Any]:
     ]
 
     # Insights
-    filtered = [l for l in labels if l and "spam" not in l]
+    filtered = [label for label in labels if label and "spam" not in label]
     top_intent = Counter(filtered).most_common(1)[0][0] if filtered else None
 
     # keyword extraction (simple, good enough for demo)
@@ -103,7 +97,7 @@ def build_dashboard(runtime_dir: Path, drafts: List[Any]) -> dict[str, Any]:
 
     # simple risk flag if toxic/abuse exists in labels
     risk_alerts: list[str] = []
-    if any("toxic" in l or "abuse" in l or "hate" in l for l in labels):
+    if any("toxic" in label or "abuse" in label or "hate" in label for label in labels):
         risk_alerts.append("possible toxic thread detected")
 
     insights = {

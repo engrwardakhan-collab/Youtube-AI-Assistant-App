@@ -1,6 +1,5 @@
 import requests
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 
 @dataclass(frozen=True)
 class OAuthResponse:
