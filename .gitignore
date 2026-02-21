@@ -27,6 +27,11 @@ runtime/
 drafts/
 failures/
 triage/
+runtime/**/*.json
+runtime/**/*.log
+
+# workspace file (optional)
+*.code-workspace
 
 # Logs
 *.log

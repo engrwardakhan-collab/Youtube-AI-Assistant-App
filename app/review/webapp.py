@@ -489,9 +489,9 @@ def home(request: Request):
   </head>
 
   <body>
-  {_topbar("YouTube Comment Review",
-         "approve, edit, and post replies — with ai triage",
-         "pending")}
+  {_topbar("YouTube Comment Review AI Assistant",
+         "Approve, Edit, and Post Replies — with AI Triage",
+         "Pending")}
 
   <div class="container">
     <div class="row" style="justify-content:space-between; align-items:center;">

@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import requests
+import time
+from app.logging import get_logger
 from dotenv import load_dotenv
 
 
@@ -61,6 +63,29 @@ class OpenAIClient:
             raise RuntimeError(
                 "Missing OpenAI API key. Set OPENAI_API_KEY or OPENAI_API_KEY_PATH in .env."
             )
+        self._logger = get_logger("openai_client")
+
+    def _post_with_retry(self, url: str, json: Dict[str, Any], headers: Dict[str, str], timeout: int, max_retries: int = 3) -> requests.Response:
+        delay = 1.0
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = requests.post(url, json=json, headers=headers, timeout=timeout)
+                if resp.status_code == 429 or 500 <= resp.status_code < 600:
+                    # transient, retry
+                    self._logger.warning(f"OpenAI transient status {resp.status_code}, attempt {attempt}")
+                    if attempt == max_retries:
+                        return resp
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                return resp
+            except requests.RequestException as exc:
+                self._logger.warning(f"OpenAI request exception on attempt {attempt}: {exc}")
+                if attempt == max_retries:
+                    raise
+                time.sleep(delay)
+                delay *= 2
+
 
     def complete(self, system: str, user: str, max_output_tokens: int = 800) -> str:
         payload = {
@@ -76,15 +101,18 @@ class OpenAIClient:
             "Content-Type": "application/json",
         }
 
-        resp = requests.post(
+        resp = self._post_with_retry(
             f"{self.base_url}/responses",
             json=payload,
             headers=headers,
             timeout=self.timeout_seconds,
+            max_retries=3,
         )
 
         if resp.status_code >= 400:
-            raise RuntimeError(f"OpenAI API error {resp.status_code}: {resp.text}")
+            # include body up to a limit
+            txt = resp.text[:2000]
+            raise RuntimeError(f"OpenAI API error {resp.status_code}: {txt}")
 
         data = resp.json()
         text = _extract_output_text(data)
