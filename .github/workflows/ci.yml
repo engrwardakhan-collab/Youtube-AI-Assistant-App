@@ -2,24 +2,34 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, feature/auth-youtube ]
   pull_request:
     branches: [ main, master ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements-lock.txt ]; then pip install -r requirements-lock.txt; else pip install -r requirements.txt; fi
-          pip install pytest
-      - name: Run tests
+          pip install -r requirements.txt
+          pip install pytest ruff
+
+      - name: Lint
         run: |
-          pytest -q
+          ruff check .
+
+      - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python -m pytest -q
