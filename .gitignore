@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Secrets
+secrets/
+tokens.json
+*.token
+
+# Runtime/Generated files
+runtime/
+drafts/
+failures/
+triage/
+runtime/**/*.json
+runtime/**/*.log
+
+# workspace file (optional)
+*.code-workspace
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+settings.json
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
