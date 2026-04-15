@@ -1,5 +1,4 @@
 import importlib
-import os
 from pathlib import Path
 import pytest
 
@@ -15,11 +14,9 @@ def test_triage_fails_without_config(tmp_path, monkeypatch):
     for sub in ["config", "app/config", "runtime"]:
         (tmp_path / sub).mkdir(parents=True, exist_ok=True)
 
-    # Reload module to trigger import-time search
-    import app.ai.triage as triage_mod
-    monkeypatch.setenv("PYTHONPATH", str(tmp_path))
+    # Import the triage module without any matching config files; this should fail.
     with pytest.raises(FileNotFoundError):
-        importlib.reload(triage_mod)
+        importlib.import_module("app.ai.triage")
 
 
 def test_triage_loads_from_root_config(tmp_path, monkeypatch):

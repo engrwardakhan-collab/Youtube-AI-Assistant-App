@@ -8,7 +8,7 @@ from app.ai.triage_engine import TriageConfig, CommentTriageEngine, TriageResult
 _SEARCH_PATHS = [
     Path("config/triage_rules.json"),       # root-level config dir
     Path("app/config/triage_rules.json"),   # module-local config
-    # Path("runtime/triage_rules.json"),      # legacy runtime location
+    Path("runtime/triage_rules.json"),      # legacy runtime location
     # Path("runtime/triage.rules"),           # older format
 ]
 _CFG_PATH = next((p for p in _SEARCH_PATHS if p.exists()), None)
