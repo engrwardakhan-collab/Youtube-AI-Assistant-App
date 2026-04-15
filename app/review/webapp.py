@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pathlib import Path
@@ -25,9 +26,9 @@ app = FastAPI(
     openapi_url=None,
 )
 
-stores = DraftStores(Path("runtime"))
-metrics = Metrics(Path("runtime/metrics.json"))
-RUNTIME_DIR = Path("runtime")
+stores = DraftStores()
+metrics = Metrics()
+RUNTIME_DIR = Path(os.getenv("RUNTIME_DIR", "runtime"))
 
 
 def _build_services():
@@ -768,7 +769,7 @@ def errors_page():
         original = _escape(d.original_text)
         reply = _escape(d.reply_text)
 
-        err_file = (Path("runtime") / "errors" / f"{d.comment_id}.json")
+        err_file = (RUNTIME_DIR / "errors" / f"{d.comment_id}.json")
         err_msg = ""
         try:
             import json as _json

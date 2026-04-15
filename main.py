@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 import json
 import hashlib
@@ -29,7 +30,7 @@ from app.ai.batch_drafter import batch_draft_replies
 # -------------------------
 # Runtime folders
 # -------------------------
-RUNTIME_DIR = Path("runtime")
+RUNTIME_DIR = Path(os.getenv("RUNTIME_DIR", "runtime"))
 
 TRIAGE_DIR = RUNTIME_DIR / "triage"
 DRAFTS_DIR = RUNTIME_DIR / "drafts"
@@ -110,8 +111,8 @@ def run_once() -> dict:
 
     fetcher = CommentFetcher(
         youtube_client=yt,
-        checkpoint_store=CheckpointStore(Path("runtime/checkpoint.json")),
-        replied_store=RepliedStore(Path("runtime/replied_ids.json"), maxlen=5000),
+        checkpoint_store=CheckpointStore(RUNTIME_DIR / "checkpoint.json"),
+        replied_store=RepliedStore(RUNTIME_DIR / "replied_ids.json", maxlen=5000),
     )
 
     result = fetcher.fetch_latest_for_channel(

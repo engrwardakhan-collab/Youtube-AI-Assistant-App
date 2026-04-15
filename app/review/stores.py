@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 from pathlib import Path
 from typing import List, Optional
@@ -9,7 +10,9 @@ from app.review.models import DraftRecord
 
 
 class DraftStores:
-    def __init__(self, runtime_dir: Path = Path("runtime")):
+    def __init__(self, runtime_dir: Path | None = None):
+        if runtime_dir is None:
+            runtime_dir = Path(os.getenv("RUNTIME_DIR", "runtime"))
         self.pending = runtime_dir / "drafts"
         self.processed = runtime_dir / "processed"
         self.rejected = runtime_dir / "rejected"

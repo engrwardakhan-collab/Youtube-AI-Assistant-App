@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 from pathlib import Path
 from typing import Dict
@@ -10,7 +11,9 @@ from collections import Counter
 
 
 class Metrics:
-    def __init__(self, path: Path = Path("runtime/metrics.json")):
+    def __init__(self, path: Path | None = None):
+        if path is None:
+            path = Path(os.getenv("RUNTIME_DIR", "runtime")) / "metrics.json"
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if not self.path.exists():
