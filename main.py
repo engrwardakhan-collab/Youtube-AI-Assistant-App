@@ -88,7 +88,7 @@ def run_once() -> dict:
 
     store = TokenStore(
         refresh_token_path=s.REFRESH_TOKEN_PATH,
-        cache_path=s.TOKENS_CACHE_PATH,
+        cache_path=s.ACCESS_TOKEN_PATH,
     )
 
     oauth_client = GoogleOAuthClient(

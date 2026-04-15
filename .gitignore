@@ -19,7 +19,7 @@ build/
 
 # Secrets
 secrets/
-tokens.json
+access_token.json
 *.token
 
 # Runtime/Generated files

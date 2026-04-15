@@ -104,6 +104,7 @@ Copy `.env.example` to `.env` and fill in the required values:
 - `YT_CLIENT_ID`
 - `YT_CLIENT_SECRET`
 - `YOUTUBE_CHANNEL_ID`
+- `ACCESS_TOKEN_PATH` (optional; defaults to `runtime/access_token.json`)
 
 Place secret files in `secrets/`:
 
@@ -155,7 +156,7 @@ Watch a quick demo: https://www.loom.com/share/3948c00a2bd947babbfcb6c998527710
 
 ## Author
 
-Warda Khan — Applied AI Engineer
+Warda Khan — Applied AI Engineer | AI Autamation Engineer
 
 ### Acknowledgements
 

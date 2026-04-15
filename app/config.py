@@ -21,7 +21,7 @@ class Settings:
 
     # Paths (may be derived from environment)
     REFRESH_TOKEN_PATH: Optional[Path] = None
-    TOKENS_CACHE_PATH: Optional[Path] = None
+    ACCESS_TOKEN_PATH: Optional[Path] = None
 
     # Check interval
     CHECK_INTERVAL_SECONDS: int = 30 * 60  # 30 minutes
@@ -35,7 +35,7 @@ class Settings:
         client_secret = os.getenv("YT_CLIENT_SECRET")
         youtube_channel = os.getenv("YOUTUBE_CHANNEL_ID")
         refresh_path = os.getenv("REFRESH_TOKEN_PATH")
-        tokens_cache = os.getenv("TOKENS_CACHE_PATH")
+        access_path = os.getenv("ACCESS_TOKEN_PATH")
 
         if client_id:
             object.__setattr__(self, "CLIENT_ID", client_id)
@@ -45,8 +45,8 @@ class Settings:
             object.__setattr__(self, "YOUTUBE_CHANNEL_ID", youtube_channel)
         if refresh_path:
             object.__setattr__(self, "REFRESH_TOKEN_PATH", BASE_DIR / refresh_path)
-        if tokens_cache:
-            object.__setattr__(self, "TOKENS_CACHE_PATH", BASE_DIR / tokens_cache)
+        if access_path:
+            object.__setattr__(self, "ACCESS_TOKEN_PATH", BASE_DIR / access_path)
 
     def validate(self) -> List[str]:
         """Return a list of validation error messages (empty if valid).
@@ -70,5 +70,14 @@ class Settings:
                     errs.append(f"REFRESH_TOKEN_PATH not found: {p}")
             except Exception:
                 errs.append("REFRESH_TOKEN_PATH is invalid")
+
+        # access token path is optional; we just cache if present
+        if self.ACCESS_TOKEN_PATH:
+            try:
+                p = Path(self.ACCESS_TOKEN_PATH)
+                # file may not yet exist, that's fine; just ensure parent dir exists
+                p.parent.mkdir(parents=True, exist_ok=True)
+            except Exception:
+                errs.append("ACCESS_TOKEN_PATH is invalid")
 
         return errs

@@ -21,7 +21,7 @@ class TokenStore:
     """
     Handles:
     - reading refresh token from a separate file (manual paste)
-    - persisting access token + expiry to runtime/tokens.json
+    - persisting access token + expiry to a configurable file (default runtime/access_token.json)
     """
     def __init__(self, refresh_token_path: Path, cache_path: Path):
         self.refresh_token_path = refresh_token_path
