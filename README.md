@@ -119,6 +119,22 @@ Place secret files in `secrets/`:
 
 Open the UI at: http://127.0.0.1:8000
 
+### Render Deployment
+
+Render runs the app on Linux, so do not use `.\run-ui.bat` as the start command there.
+
+Use this Render start command:
+
+```bash
+python -m uvicorn app.review.webapp:app --host 0.0.0.0 --port $PORT
+```
+
+Build command:
+
+```bash
+pip install -r requirements.txt
+```
+
 6) Run the CLI workflow (fetch + draft)
 
 ```powershell
